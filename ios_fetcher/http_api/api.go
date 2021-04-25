@@ -12,6 +12,8 @@ import (
 type ApiClient struct {
 	router *chi.Mux
 	port   string
+
+	HealthEndpoint HealthAPI
 }
 
 func NewApiClient(port string) *ApiClient {
@@ -23,13 +25,19 @@ func NewApiClient(port string) *ApiClient {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 
+	health := NewHealthAPI()
+
 	return &ApiClient{
 		router: r,
 		port:   port,
+		HealthEndpoint: *health,
 	}
 }
 
 func (api *ApiClient) StartServer() {
 	log.Println("starting server...")
+
+	api.router.Get("/", api.HealthEndpoint.Root)
+
 	http.ListenAndServe("0.0.0.0:"+api.port, api.router)
 }
